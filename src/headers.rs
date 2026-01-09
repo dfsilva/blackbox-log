@@ -391,13 +391,13 @@ impl PartialOrd for Firmware {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FirmwareVersion {
-    pub major: u8,
-    pub minor: u8,
-    pub patch: u8,
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
 }
 
 impl FirmwareVersion {
-    pub const fn new(major: u8, minor: u8, patch: u8) -> Self {
+    pub const fn new(major: u16, minor: u16, patch: u16) -> Self {
         Self {
             major,
             minor,
@@ -443,6 +443,7 @@ pub(crate) enum InternalFirmware {
     Betaflight4_3,
     Betaflight4_4,
     Betaflight4_5,
+    Betaflight2025,
     Inav5,
     Inav6,
     Inav7,
@@ -455,7 +456,8 @@ impl InternalFirmware {
             Self::Betaflight4_2
             | Self::Betaflight4_3
             | Self::Betaflight4_4
-            | Self::Betaflight4_5 => true,
+            | Self::Betaflight4_5
+            | Self::Betaflight2025 => true,
             Self::Inav5 | Self::Inav6 | Self::Inav7 | Self::Inav8 => false,
         }
     }
@@ -483,6 +485,9 @@ impl From<Firmware> for InternalFirmware {
             Firmware::Betaflight(FirmwareVersion {
                 major: 4, minor: 5, ..
             }) => Self::Betaflight4_5,
+            Firmware::Betaflight(FirmwareVersion {
+                major: 2025.., ..
+            }) => Self::Betaflight2025,
             Firmware::Inav(FirmwareVersion { major: 5, .. }) => Self::Inav5,
             Firmware::Inav(FirmwareVersion { major: 6, .. }) => Self::Inav6,
             Firmware::Inav(FirmwareVersion { major: 7, .. }) => Self::Inav7,
