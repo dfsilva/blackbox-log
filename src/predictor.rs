@@ -113,10 +113,7 @@ impl Predictor {
             ),
             Self::FifteenHundred => 1500,
             Self::VBatReference => ctx.headers.vbat_reference.unwrap().into(),
-            Self::LastMainFrameTime => {
-                tracing::debug!("found unhandled {self:?}");
-                0
-            }
+            Self::LastMainFrameTime => ctx.last_main_frame_time.unwrap_or(0) as u32,
             Self::MinMotor => ctx.headers.motor_output_range.unwrap().min.into(),
         };
 
@@ -157,6 +154,7 @@ pub(crate) struct PredictorContext<'a, 'data> {
     last_last: Option<u32>,
     skipped_frames: u32,
     gps_home: Option<GpsPosition>,
+    last_main_frame_time: Option<u64>,
 }
 
 impl<'a, 'data> PredictorContext<'a, 'data> {
@@ -167,6 +165,7 @@ impl<'a, 'data> PredictorContext<'a, 'data> {
             last_last: None,
             skipped_frames: 0,
             gps_home: None,
+            last_main_frame_time: None,
         }
     }
 
@@ -177,6 +176,7 @@ impl<'a, 'data> PredictorContext<'a, 'data> {
             last_last: None,
             skipped_frames,
             gps_home: None,
+            last_main_frame_time: None,
         }
     }
 
@@ -190,6 +190,22 @@ impl<'a, 'data> PredictorContext<'a, 'data> {
             last_last: None,
             skipped_frames: 0,
             gps_home,
+            last_main_frame_time: None,
+        }
+    }
+
+    #[expect(unused)]
+    pub(crate) const fn with_last_main_time(
+        headers: &'a Headers<'data>,
+        last_main_frame_time: Option<u64>,
+    ) -> Self {
+        Self {
+            headers,
+            last: None,
+            last_last: None,
+            skipped_frames: 0,
+            gps_home: None,
+            last_main_frame_time,
         }
     }
 
