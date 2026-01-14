@@ -374,7 +374,6 @@ pub(crate) fn parse_frame_def_header(header: &str) -> Option<(DataFrameKind, Dat
     ))
 }
 
-// TODO: width?
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataFrameProperty {
     Name,

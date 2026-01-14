@@ -100,7 +100,7 @@ impl Predictor {
             Self::HomeLat | Self::HomeLon => ctx.gps_home.map_or_else(
                 || {
                     tracing::debug!("found {self:?} without gps home");
-                    // TODO: invalidate result
+                    // GPS home not set - return 0 as fallback (may produce invalid coordinates)
                     0
                 },
                 |home| {
@@ -137,7 +137,7 @@ impl Predictor {
             "4" => Some(Self::MinThrottle),
             "5" => Some(Self::Motor0),
             "6" => Some(Self::Increment),
-            "7" => Some(Self::HomeLat), // TODO: check that lat = 0, lon = 1
+            "7" => Some(Self::HomeLat), // Predictor 7 = HomeLat, 256 (separate enum) = HomeLon
             "8" => Some(Self::FifteenHundred),
             "9" => Some(Self::VBatReference),
             "10" => Some(Self::LastMainFrameTime),

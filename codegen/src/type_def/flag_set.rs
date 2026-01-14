@@ -82,7 +82,7 @@ impl FlagSet {
                 {
                     use serde::ser::SerializeSeq as _;
 
-                    // TODO: length
+                    // Length unknown at serialization time (FlagSet bits are iterated dynamically)
                     let mut seq = serializer.serialize_seq(None)?;
 
                     for flag in self.iter() {

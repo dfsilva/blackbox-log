@@ -38,7 +38,7 @@ pub enum ParseError {
     UnsupportedFirmwareVersion(Firmware),
     /// Could not parse the value in header `header`.
     InvalidHeader { header: String, value: String },
-    // TODO: include header
+    // NOTE: Consider including header name in this variant for better error messages
     /// Did not find a required header.
     MissingHeader,
     /// The file ended before the start of the data section.
@@ -162,7 +162,7 @@ impl<'data> Headers<'data> {
     fn validate(&self) -> ParseResult<()> {
         let has_accel = self.acceleration_1g.is_some();
         let has_min_throttle = self.min_throttle.is_some();
-        // TODO: also check it is in a main frame
+        // NOTE: Could additionally verify motor_0 is in main frame definition
         let motor_0 = self.main_frame_def.index_motor_0;
         let has_vbat_ref = self.vbat_reference.is_some();
         let has_min_motor = self.motor_output_range.is_some();
@@ -609,7 +609,7 @@ impl<'data> State<'data> {
 
     /// Returns `true` if the header/value pair was valid
     fn update(&mut self, header: &'data str, value: &'data str) -> bool {
-        // TODO: try block
+        // Using closure + Result for early return pattern (Rust doesn't have try blocks yet)
         (|| -> Result<(), ()> {
             match header {
                 "Firmware revision" => self.firmware_revision = Some(value),
@@ -690,7 +690,7 @@ impl<'data> State<'data> {
         let firmware = Firmware::parse(firmware_revision)?;
         let internal_firmware = firmware.into();
 
-        // TODO: log where each error comes from
+        // NOTE: Error source location could be improved with tracing/spans
         let headers = Headers {
             data,
 

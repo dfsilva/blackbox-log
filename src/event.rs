@@ -51,7 +51,7 @@ impl Event {
 
         let event = match kind {
             EventKind::SyncBeep => {
-                // TODO: SyncBeep handle time rollover
+                // NOTE: SyncBeep times may overflow for long flights (>71 min at 1µs resolution)
 
                 let time = decode::variable(data)?;
                 Self::SyncBeep(time.into())
