@@ -87,7 +87,9 @@ impl<'data, 'headers> DataParser<'data, 'headers> {
             let restore = self.data.get_restore_point();
 
             let Some(kind) = FrameKind::from_byte(byte) else {
-                skip_to_frame(&mut self.data);
+                if !skip_to_frame(&mut self.data) {
+                    return None;
+                }
                 continue;
             };
 
@@ -194,7 +196,9 @@ impl<'data, 'headers> DataParser<'data, 'headers> {
                 Ok(_) | Err(InternalError::Retry) => {
                     tracing::debug!("found corrupted {kind:?} frame");
                     self.data.restore(restore);
-                    skip_to_frame(&mut self.data);
+                    if !skip_to_frame(&mut self.data) {
+                        return None;
+                    }
                 }
                 Err(InternalError::Eof) => {
                     tracing::debug!("found unexpected end of file in data section");
@@ -243,7 +247,7 @@ pub enum ParserEvent<'data, 'headers, 'parser> {
 }
 
 #[cold]
-fn skip_to_frame(data: &mut Reader) {
+fn skip_to_frame(data: &mut Reader) -> bool {
     data.skip_until_any(
         &[
             FrameKind::Event,
@@ -253,7 +257,7 @@ fn skip_to_frame(data: &mut Reader) {
             FrameKind::Data(DataFrameKind::GpsHome),
         ]
         .map(u8::from),
-    );
+    )
 }
 
 #[derive(Debug, Default)]
