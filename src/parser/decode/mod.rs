@@ -3,6 +3,7 @@
 mod negative_14_bit;
 mod tagged_16;
 mod tagged_32;
+mod tagged_32_variable;
 mod tagged_variable;
 mod variable;
 
@@ -11,6 +12,7 @@ use alloc::vec::Vec;
 pub(crate) use self::negative_14_bit::negative_14_bit;
 pub(crate) use self::tagged_16::tagged_16;
 pub(crate) use self::tagged_32::tagged_32;
+pub(crate) use self::tagged_32_variable::tagged_32_variable;
 pub(crate) use self::tagged_variable::tagged_variable;
 pub(crate) use self::variable::{variable, variable_signed};
 use super::InternalResult;
@@ -40,6 +42,16 @@ byte_enum! {
         Tagged16 = 8,
         /// Nothing is written to the log, assume value is 0
         Null = 9,
+        /// 1 tag byte containing a 2-bit selector and up to 3 signed variable-width
+        /// fields. Field widths depend on the selector:
+        ///
+        /// | Selector | Field widths  |
+        /// |----------|---------------|
+        /// | 0        | 2, 2, 2       |
+        /// | 1        | 5, 5, 4       |
+        /// | 2        | 8, 7, 7       |
+        /// | 3        | 8/16/24/32    |
+        Tagged32Variable = 10,
     }
 }
 
@@ -50,7 +62,8 @@ impl Encoding {
             | Self::Negative14Bit
             | Self::TaggedVariable
             | Self::Tagged32
-            | Self::Tagged16 => true,
+            | Self::Tagged16
+            | Self::Tagged32Variable => true,
             Self::Variable | Self::Null => false,
         }
     }
@@ -58,7 +71,7 @@ impl Encoding {
     pub(crate) const fn max_chunk_size(&self) -> usize {
         match self {
             Self::TaggedVariable => 8,
-            Self::Tagged32 => 3,
+            Self::Tagged32 | Self::Tagged32Variable => 3,
             Self::Tagged16 => 4,
             Self::VariableSigned | Self::Variable | Self::Negative14Bit | Self::Null => 1,
         }
@@ -84,6 +97,11 @@ impl Encoding {
             }
             Self::Tagged32 => {
                 into.extend_from_slice(&tagged_32(data)?.map(i32::cast_unsigned)[range]);
+            }
+            Self::Tagged32Variable => {
+                into.extend_from_slice(
+                    &tagged_32_variable(data)?.map(i32::cast_unsigned)[range],
+                );
             }
             Self::Tagged16 => {
                 into.extend_from_slice(

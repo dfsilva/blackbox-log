@@ -349,7 +349,7 @@ fn unit_from_name(name: &str) -> MainUnit {
         "vbat" | "vbatLatest" => MainUnit::Voltage,
         "amperageLatest" => MainUnit::Amperage,
         "accSmooth" => MainUnit::Acceleration,
-        "gyroADC" => MainUnit::Rotation,
+        "gyroADC" | "gyroUnfilt" => MainUnit::Rotation,
         _ => MainUnit::Unitless,
     }
 }
