@@ -46,13 +46,15 @@ impl super::Frame for GpsFrame<'_, '_, '_> {
                 GpsValue::Coordinate(f64::from(value) / 10000000.)
             }
             GpsUnit::Altitude => {
-                let altitude = if def.signed {
+                let altitude: f64 = if def.signed {
                     raw.cast_signed().into()
                 } else {
                     raw.into()
                 };
 
-                GpsValue::Altitude(Length::new::<meter>(altitude))
+                // Firmware logs GPS altitude in 0.1 m increments (altCm/10), so the
+                // stored value is decimetres — divide by 10 for metres (matches BBLV).
+                GpsValue::Altitude(Length::new::<meter>(altitude / 10.0))
             }
             GpsUnit::Velocity => {
                 assert!(!def.signed);

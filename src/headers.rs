@@ -308,6 +308,19 @@ impl<'data> Headers<'data> {
         self.pwm_protocol
     }
 
+    /// The configured `minthrottle`, if logged. For analog ESC protocols this is
+    /// the bottom of the motor output range used to scale motor values to percent.
+    #[inline]
+    pub fn min_throttle(&self) -> Option<u16> {
+        self.min_throttle
+    }
+
+    /// The logged `motorOutput` range as `(min, max)`, if present.
+    #[inline]
+    pub fn motor_output_range(&self) -> Option<(u16, u16)> {
+        self.motor_output_range.map(|r| (r.min, r.max))
+    }
+
     /// Any unknown headers.
     #[inline]
     pub fn unknown(&self) -> &HashMap<&'data str, &'data str> {
@@ -510,7 +523,6 @@ impl PartialOrd for InternalFirmware {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct MotorOutputRange {
     pub(crate) min: u16,
-    #[expect(dead_code)]
     pub(crate) max: u16,
 }
 
