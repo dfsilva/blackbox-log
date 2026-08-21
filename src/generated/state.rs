@@ -183,15 +183,18 @@ impl State {
         match (bit, fw) {
             (
                 0u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::GpsFixHome),
             (
                 1u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::GpsFix),
-            (2u32, Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => Some(Self::GpsFixEver),
+            (
+                2u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
+            ) => Some(Self::GpsFixEver),
             (2u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::CalibrateMag),
             (3u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::SmallAngle),
             (4u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::FixedWingLegacy),
@@ -204,7 +207,9 @@ impl State {
             (11u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavCruiseBraking),
             (12u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavCruiseBrakingBoost),
             (13u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavCruiseBrakingLocked),
-            (14u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavExtraArmingSafetyBypassed),
+            (14u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => {
+                Some(Self::NavExtraArmingSafetyBypassed)
+            }
             (15u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AirMode),
             (16u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::EscSensorEnabled),
             (17u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Airplane),
@@ -213,7 +218,9 @@ impl State {
             (20u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Boat),
             (21u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AltitudeControl),
             (22u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::MoveForwardOnly),
-            (23u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::SetReversibleMotorsForward),
+            (23u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => {
+                Some(Self::SetReversibleMotorsForward)
+            }
             (24u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::FwHeadingUseYaw),
             (25u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AntiWindupDeactivated),
             (26u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::LandingDetected),
@@ -228,15 +235,18 @@ impl State {
         match (self, fw) {
             (
                 Self::GpsFixHome,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(0u32),
             (
                 Self::GpsFix,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(1u32),
-            (Self::GpsFixEver, Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => Some(2u32),
+            (
+                Self::GpsFixEver,
+                Betaflight2025 | Betaflight2026 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
+            ) => Some(2u32),
             (Self::CalibrateMag, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(2u32),
             (Self::SmallAngle, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(3u32),
             (Self::FixedWingLegacy, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(4u32),
@@ -249,7 +259,9 @@ impl State {
             (Self::NavCruiseBraking, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(11u32),
             (Self::NavCruiseBrakingBoost, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(12u32),
             (Self::NavCruiseBrakingLocked, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(13u32),
-            (Self::NavExtraArmingSafetyBypassed, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(14u32),
+            (Self::NavExtraArmingSafetyBypassed, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => {
+                Some(14u32)
+            }
             (Self::AirMode, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(15u32),
             (Self::EscSensorEnabled, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(16u32),
             (Self::Airplane, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(17u32),
@@ -258,7 +270,9 @@ impl State {
             (Self::Boat, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(20u32),
             (Self::AltitudeControl, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(21u32),
             (Self::MoveForwardOnly, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(22u32),
-            (Self::SetReversibleMotorsForward, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(23u32),
+            (Self::SetReversibleMotorsForward, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => {
+                Some(23u32)
+            }
             (Self::FwHeadingUseYaw, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(24u32),
             (Self::AntiWindupDeactivated, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(25u32),
             (Self::LandingDetected, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(26u32),

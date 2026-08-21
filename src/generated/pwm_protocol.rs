@@ -7,6 +7,8 @@ pub enum PwmProtocol {
     Brushed,
     /// `DISABLED`
     Disabled,
+    /// `DRONECAN`
+    Dronecan,
     /// `DSHOT150`
     Dshot150,
     /// `DSHOT300`
@@ -30,6 +32,7 @@ impl crate::units::Flag for PwmProtocol {
         match self {
             Self::Brushed => "BRUSHED",
             Self::Disabled => "DISABLED",
+            Self::Dronecan => "DRONECAN",
             Self::Dshot150 => "DSHOT150",
             Self::Dshot300 => "DSHOT300",
             Self::Dshot600 => "DSHOT600",
@@ -60,43 +63,60 @@ impl PwmProtocol {
         match (raw, fw) {
             (
                 0u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Standard),
             (
                 1u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Oneshot125),
-            (2u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Oneshot42)
-            }
+            (
+                2u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Oneshot42),
             (2u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Multishot),
-            (3u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Multishot)
-            }
+            (
+                3u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Multishot),
             (3u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Brushed),
-            (4u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Brushed)
-            }
+            (
+                4u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Brushed),
             (4u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Dshot150),
-            (5u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Dshot150)
-            }
+            (
+                5u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Dshot150),
             (5u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Dshot300),
-            (6u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Dshot300)
-            }
+            (
+                6u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Dshot300),
             (6u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Dshot600),
-            (7u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Dshot600)
-            }
-            (8u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Proshot1000)
-            }
-            (9u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Some(Self::Disabled)
-            }
+            (
+                7u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Dshot600),
+            (
+                8u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Proshot1000),
+            (
+                9u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Some(Self::Disabled),
+            (10u32, Betaflight2026) => Some(Self::Dronecan),
             _ => {
                 #[allow(clippy::redundant_closure_call)]
                 (|raw| tracing::error!("invalid pwm protocol: {raw}"))(raw);

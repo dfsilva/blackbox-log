@@ -3,6 +3,8 @@
 /// The current failsafe phase.
 #[non_exhaustive]
 pub enum FailsafePhase {
+    /// `AUTOPILOT`
+    Autopilot,
     /// `GPS_RESCUE`
     GpsRescue,
     /// `IDLE`
@@ -27,6 +29,7 @@ pub enum FailsafePhase {
 impl crate::units::Flag for FailsafePhase {
     fn as_name(&self) -> &'static str {
         match self {
+            Self::Autopilot => "AUTOPILOT",
             Self::GpsRescue => "GPS_RESCUE",
             Self::Idle => "IDLE",
             Self::Landed => "LANDED",
@@ -59,30 +62,45 @@ impl FailsafePhase {
         match (raw, fw) {
             (
                 0u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Self::Idle,
             (
                 1u32,
-                Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025 | Inav5 | Inav6
-                | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Self::RxLossDetected,
-            (2u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => Self::Landing,
+            (
+                2u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Self::Landing,
             (2u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::RxLossIdle,
-            (3u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => Self::Landed,
+            (
+                3u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Self::Landed,
             (3u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::ReturnToHome,
-            (4u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Self::RxLossMonitoring
-            }
+            (
+                4u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Self::RxLossMonitoring,
             (4u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::Landing,
-            (5u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Self::RxLossRecovered
-            }
+            (
+                5u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Self::RxLossRecovered,
             (5u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::Landed,
-            (6u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Betaflight2025) => {
-                Self::GpsRescue
-            }
+            (
+                6u32,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
+            ) => Self::GpsRescue,
             (6u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::RxLossMonitoring,
+            (7u32, Betaflight2026) => Self::Autopilot,
             (7u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Self::RxLossRecovered,
             _ => {
                 #[allow(clippy::redundant_closure_call)]

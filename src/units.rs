@@ -104,6 +104,62 @@ mod tests {
         assert_eq!(names(1 << 3, InternalFirmware::Betaflight4_5), vec!["MAG"]);
     }
 
+    // Audit F-03: the Betaflight2025 debug-mode table was a copy of the 4.5 table.
+    // DEBUG_GYRO_SCALED was removed in 2025.12 (betaflight#13101) and DEBUG_OPTICALFLOW
+    // inserted at 28, so raw 6..=28 decoded one position late; the ten modes added since
+    // 4.5 were absent entirely, and an unmapped debug_mode used to fail the whole parse.
+    #[test]
+    fn debug_mode_table_tracks_firmware() {
+        use crate::headers::{DebugMode, InternalFirmware};
+        let m = |raw: u32, fw: InternalFirmware| {
+            DebugMode::new(raw, fw).map(|d| <DebugMode as Flag>::as_name(&d))
+        };
+
+        // 2025.12 dropped GYRO_SCALED, shifting everything from 6 up by one...
+        assert_eq!(m(6, InternalFirmware::Betaflight2025), Some("RC_INTERPOLATION"));
+        assert_eq!(m(7, InternalFirmware::Betaflight2025), Some("ANGLERATE"));
+        assert_eq!(m(20, InternalFirmware::Betaflight2025), Some("MULTI_GYRO_RAW"));
+        // ...while 4.5 keeps the old ordering at those same values.
+        assert_eq!(m(6, InternalFirmware::Betaflight4_5), Some("GYRO_SCALED"));
+        assert_eq!(m(7, InternalFirmware::Betaflight4_5), Some("RC_INTERPOLATION"));
+
+        // OPTICALFLOW was inserted at 28, which realigns everything from 29 up.
+        assert_eq!(m(28, InternalFirmware::Betaflight2025), Some("OPTICALFLOW"));
+        assert_eq!(m(29, InternalFirmware::Betaflight2025), Some("LIDAR_TF"));
+        assert_eq!(m(29, InternalFirmware::Betaflight4_5), Some("LIDAR_TF"));
+
+        // D_LPF is the mode `FlightData::d_unfiltered` keys on; it must not move.
+        assert_eq!(m(63, InternalFirmware::Betaflight2025), Some("D_LPF"));
+        assert_eq!(m(63, InternalFirmware::Betaflight4_5), Some("D_LPF"));
+
+        // Modes added after 4.5 used to return None, which failed the whole log.
+        assert_eq!(m(90, InternalFirmware::Betaflight2025), Some("TPA"));
+        assert_eq!(m(97, InternalFirmware::Betaflight2025), Some("CHIRP"));
+        assert_eq!(m(99, InternalFirmware::Betaflight2025), Some("MAVLINK_TELEMETRY"));
+
+        // 2026 re-numbered the tail again and added four more.
+        assert_eq!(m(96, InternalFirmware::Betaflight2026), Some("CHIRP"));
+        assert_eq!(m(102, InternalFirmware::Betaflight2026), Some("PITOT"));
+        assert_eq!(m(102, InternalFirmware::Betaflight2025), None);
+    }
+
+    // Audit F-03: 2026 inserted BOXAUTOPILOT at bit 11 and added MOTOR_PROTOCOL_DRONECAN.
+    #[test]
+    fn betaflight_2026_tables() {
+        use crate::headers::{InternalFirmware, PwmProtocol};
+        use alloc::vec;
+
+        let names = |raw: u32, fw| FlightModeSet::new(raw, fw).as_names();
+        assert_eq!(names(1 << 11, InternalFirmware::Betaflight2026), vec!["AUTOPILOT"]);
+        assert_eq!(names(1 << 12, InternalFirmware::Betaflight2026), vec!["ANTI GRAVITY"]);
+        // 2025 keeps ANTI GRAVITY one bit lower.
+        assert_eq!(names(1 << 11, InternalFirmware::Betaflight2025), vec!["ANTI GRAVITY"]);
+
+        // A DroneCAN log used to fail: motor_pwm_protocol is a required header.
+        assert!(PwmProtocol::new(10, InternalFirmware::Betaflight2026).is_some());
+        assert!(PwmProtocol::new(10, InternalFirmware::Betaflight2025).is_none());
+    }
+
     macro_rules! float_eq {
         ($left:expr, $right:expr) => {
             let epsilon = 0.0001;

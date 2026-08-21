@@ -129,7 +129,14 @@ impl RawMainFrame {
         if kind == FrameKind::Data(DataFrameKind::Intra) {
             def.parse_intra(data, headers, last)
         } else {
-            let skipped = 0; // FIXME
+            // Frames the firmware deliberately did not write, because
+            // `blackbox_sample_rate` is below 1/1. `loopIteration` is predicted with
+            // `Increment`, so leaving this at 0 (as it used to be) made the decoded
+            // iteration counter drift away from the flight controller's on every
+            // decimated log.
+            let skipped = last.map_or(0, |last| {
+                headers.count_intentionally_skipped_frames(last.iteration)
+            });
 
             def.parse_inter(data, headers, last, history.last_last(), skipped)
         }

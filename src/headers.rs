@@ -109,6 +109,13 @@ pub struct Headers<'data> {
     pub(crate) min_throttle: Option<u16>,
     pub(crate) motor_output_range: Option<MotorOutputRange>,
 
+    /// `I interval`: how many loop iterations lie between intra (keyframe) frames.
+    pub(crate) frame_interval_i: u32,
+    /// `P interval` numerator/denominator: the fraction of loop iterations that get
+    /// an inter frame written. Firmware below 1/1 deliberately omits frames.
+    pub(crate) frame_interval_p_num: u32,
+    pub(crate) frame_interval_p_denom: u32,
+
     unknown: HashMap<&'data str, &'data str>,
 }
 
@@ -326,6 +333,36 @@ impl<'data> Headers<'data> {
     pub fn unknown(&self) -> &HashMap<&'data str, &'data str> {
         &self.unknown
     }
+
+    /// Whether the firmware would have written a frame for loop iteration `index`.
+    ///
+    /// With `blackbox_sample_rate` below 1/1 the firmware deliberately omits some
+    /// inter frames; this reproduces its decision so the decoder can tell an
+    /// intentional gap from a dropped frame. Mirrors BBLV's `shouldHaveFrame`.
+    pub(crate) const fn should_have_frame(&self, index: u32) -> bool {
+        (index % self.frame_interval_i + self.frame_interval_p_num - 1)
+            % self.frame_interval_p_denom
+            < self.frame_interval_p_num
+    }
+
+    /// Counts the frames the firmware intentionally skipped between `last_iteration`
+    /// and the next frame it actually wrote.
+    ///
+    /// `loopIteration` uses the `Increment` predictor, so without this the decoded
+    /// iteration counter drifts away from the flight controller's on any log with
+    /// `blackbox_sample_rate` below 1/1. Mirrors BBLV's
+    /// `countIntentionallySkippedFrames`.
+    pub(crate) fn count_intentionally_skipped_frames(&self, last_iteration: u32) -> u32 {
+        // A run of skipped frames can never be longer than the P denominator, so this
+        // both bounds the loop and guards against a nonsensical header combination.
+        let mut index = last_iteration.wrapping_add(1);
+        let mut skipped = 0;
+        while skipped < self.frame_interval_p_denom && !self.should_have_frame(index) {
+            skipped += 1;
+            index = index.wrapping_add(1);
+        }
+        skipped
+    }
 }
 
 /// A supported firmware.
@@ -457,6 +494,7 @@ pub(crate) enum InternalFirmware {
     Betaflight4_4,
     Betaflight4_5,
     Betaflight2025,
+    Betaflight2026,
     Inav5,
     Inav6,
     Inav7,
@@ -471,7 +509,8 @@ impl InternalFirmware {
             | Self::Betaflight4_3
             | Self::Betaflight4_4
             | Self::Betaflight4_5
-            | Self::Betaflight2025 => true,
+            | Self::Betaflight2025
+            | Self::Betaflight2026 => true,
             Self::Inav5 | Self::Inav6 | Self::Inav7 | Self::Inav8 | Self::Inav9 => false,
         }
     }
@@ -499,7 +538,8 @@ impl From<Firmware> for InternalFirmware {
             Firmware::Betaflight(FirmwareVersion {
                 major: 4, minor: 5, ..
             }) => Self::Betaflight4_5,
-            Firmware::Betaflight(FirmwareVersion { major: 2025.., .. }) => Self::Betaflight2025,
+            Firmware::Betaflight(FirmwareVersion { major: 2025, .. }) => Self::Betaflight2025,
+            Firmware::Betaflight(FirmwareVersion { major: 2026.., .. }) => Self::Betaflight2026,
             Firmware::Inav(FirmwareVersion { major: 5, .. }) => Self::Inav5,
             Firmware::Inav(FirmwareVersion { major: 6, .. }) => Self::Inav6,
             Firmware::Inav(FirmwareVersion { major: 7, .. }) => Self::Inav7,
@@ -702,6 +742,9 @@ impl<'data> State<'data> {
         let firmware = Firmware::parse(firmware_revision)?;
         let internal_firmware = firmware.into();
 
+        let (frame_interval_i, frame_interval_p_num, frame_interval_p_denom) =
+            parse_frame_intervals(&self.unknown);
+
         // NOTE: Error source location could be improved with tracing/spans
         let headers = Headers {
             data,
@@ -718,10 +761,20 @@ impl<'data> State<'data> {
             board_info: self.board_info.map(str::trim).filter(not_empty),
             craft_name: self.craft_name.map(str::trim).filter(not_empty),
 
-            debug_mode: self.debug_mode.map_or(Ok(DebugMode::None), |raw| {
-                DebugMode::new(raw.value, internal_firmware)
-                    .ok_or_else(|| raw.invalid_header_error())
-            })?,
+            // An unrecognised debug mode must not cost the user the whole log. New
+            // firmware adds debug modes faster than this table tracks them, and the
+            // mode only labels the `debug[]` channels -- every other field still
+            // decodes correctly. Degrade to `None` (channels shown unlabelled) rather
+            // than failing the parse, which is what a hard error here used to do.
+            debug_mode: self.debug_mode.map_or(DebugMode::None, |raw| {
+                DebugMode::new(raw.value, internal_firmware).unwrap_or_else(|| {
+                    tracing::warn!(
+                        "unknown debug_mode `{}` for {internal_firmware:?}",
+                        raw.raw
+                    );
+                    DebugMode::None
+                })
+            }),
             disabled_fields: DisabledFields::new(self.disabled_fields, internal_firmware),
             features: FeatureSet::new(self.features, internal_firmware),
             pwm_protocol: self
@@ -739,6 +792,10 @@ impl<'data> State<'data> {
             min_throttle: self.min_throttle,
             motor_output_range: self.motor_output_range,
 
+            frame_interval_i,
+            frame_interval_p_num,
+            frame_interval_p_denom,
+
             unknown: self.unknown,
         };
 
@@ -746,6 +803,35 @@ impl<'data> State<'data> {
 
         Ok(headers)
     }
+}
+
+/// Parses the `I interval` and `P interval` headers into the blackbox frame ratio.
+///
+/// `P interval` is written either as `num/denom` (older firmware) or as a bare
+/// denominator -- current Betaflight writes `blackboxPInterval` directly. Defaults
+/// mirror BBLV's `flightlog_parser.js`: I = 32, P = 1/1. All three are clamped to at
+/// least 1 so the modular arithmetic in `should_have_frame` cannot divide by zero.
+fn parse_frame_intervals(unknown: &HashMap<&str, &str>) -> (u32, u32, u32) {
+    let i = unknown
+        .get("I interval")
+        .and_then(|v| v.trim().parse::<u32>().ok())
+        .unwrap_or(32)
+        .max(1);
+
+    let (num, denom) = unknown.get("P interval").map_or((1, 1), |raw| {
+        let raw = raw.trim();
+        raw.split_once('/').map_or_else(
+            || (1, raw.parse::<u32>().unwrap_or(1)),
+            |(n, d)| {
+                (
+                    n.trim().parse::<u32>().unwrap_or(1),
+                    d.trim().parse::<u32>().unwrap_or(1),
+                )
+            },
+        )
+    });
+
+    (i, num.max(1), denom.max(1))
 }
 
 /// Expects the next character to be the leading H
@@ -770,6 +856,56 @@ fn parse_header<'data>(bytes: &mut Reader<'data>) -> InternalResult<(&'data str,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Audit F-10: `RawMainFrame::parse` hardcoded `skipped = 0`, so `loopIteration`
+    // drifted from the flight controller's counter on any log written with
+    // `blackbox_sample_rate` below 1/1. Mirrors BBLV's countIntentionallySkippedFrames.
+    #[test]
+    fn frame_interval_parsing() {
+        let intervals = |i: &str, p: &str| {
+            let mut m = HashMap::new();
+            m.insert("I interval", i);
+            m.insert("P interval", p);
+            parse_frame_intervals(&m)
+        };
+
+        // Current firmware writes a bare `blackboxPInterval`...
+        assert_eq!(intervals("32", "4"), (32, 1, 4));
+        // ...older firmware writes num/denom.
+        assert_eq!(intervals("32", "1/2"), (32, 1, 2));
+        // Degenerate values are clamped rather than dividing by zero.
+        assert_eq!(intervals("0", "0"), (1, 1, 1));
+        assert_eq!(parse_frame_intervals(&HashMap::new()), (32, 1, 1));
+    }
+
+    #[test]
+    fn counts_intentionally_skipped_frames() {
+        // Mirrors Headers::count_intentionally_skipped_frames over a bare interval
+        // triple, so the arithmetic can be checked without building a full Headers.
+        let count = |i: u32, num: u32, denom: u32, last: u32| {
+            let should = |index: u32| (index % i + num - 1) % denom < num;
+            let mut index = last.wrapping_add(1);
+            let mut skipped = 0;
+            while skipped < denom && !should(index) {
+                skipped += 1;
+                index = index.wrapping_add(1);
+            }
+            skipped
+        };
+
+        // 1/1 logs every iteration: nothing is ever skipped.
+        for last in 0..8 {
+            assert_eq!(count(32, 1, 1, last), 0, "1/1 skipped at {last}");
+        }
+
+        // 1/4 writes iterations 0, 4, 8 ... so three are skipped between each.
+        assert_eq!(count(32, 1, 4, 0), 3);
+        assert_eq!(count(32, 1, 4, 4), 3);
+
+        // 1/2 skips one between each.
+        assert_eq!(count(32, 1, 2, 0), 1);
+        assert_eq!(count(32, 1, 2, 2), 1);
+    }
 
     #[test]
     #[should_panic(expected = "Retry")]

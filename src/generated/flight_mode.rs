@@ -86,6 +86,8 @@ pub enum FlightMode {
     AutoTrim,
     /// `AUTOTUNE`
     AutoTune,
+    /// `AUTOPILOT`
+    Autopilot,
     /// `BEEP GPS COUNT`
     BeepGpsCount,
     /// `BEEPER MUTE`
@@ -236,6 +238,8 @@ pub enum FlightMode {
     VtxControlDisable,
     /// `VTX PIT MODE`
     VtxPitMode,
+    /// `WP CAPTURE`
+    WpCapture,
 }
 #[allow(unused_qualifications)]
 impl crate::units::Flag for FlightMode {
@@ -251,6 +255,7 @@ impl crate::units::Flag for FlightMode {
             Self::AutoLevel => "AUTOLEVEL",
             Self::AutoTrim => "AUTOTRIM",
             Self::AutoTune => "AUTOTUNE",
+            Self::Autopilot => "AUTOPILOT",
             Self::BeepGpsCount => "BEEP GPS COUNT",
             Self::BeeperMute => "BEEPER MUTE",
             Self::BeeperOn => "BEEPERON",
@@ -326,6 +331,7 @@ impl crate::units::Flag for FlightMode {
             Self::User4 => "USER4",
             Self::VtxControlDisable => "VTX CONTROL DISABLE",
             Self::VtxPitMode => "VTX PIT MODE",
+            Self::WpCapture => "WP CAPTURE",
         }
     }
 }
@@ -348,234 +354,276 @@ impl FlightMode {
         match (bit, fw) {
             (
                 0u32,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Arm),
             (
                 1u32,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Angle),
             (
                 2u32,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Horizon),
             (
                 3u32,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
             ) => Some(Self::Mag),
             (3u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavAltitudeHold),
-            (4u32, Betaflight2025) => Some(Self::AltitudeHold),
+            (4u32, Betaflight2025 | Betaflight2026) => Some(Self::AltitudeHold),
             (4u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::HeadFree)
             }
             (4u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::HeadingHold),
-            (5u32, Betaflight2025 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::HeadFree),
+            (5u32, Betaflight2025 | Betaflight2026 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => {
+                Some(Self::HeadFree)
+            }
             (5u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Passthru)
             }
-            (6u32, Betaflight2025) => Some(Self::Chirp),
+            (6u32, Betaflight2025 | Betaflight2026) => Some(Self::Chirp),
             (6u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Failsafe)
             }
             (6u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::HeadAdjust),
-            (7u32, Betaflight2025) => Some(Self::Passthru),
+            (7u32, Betaflight2025 | Betaflight2026) => Some(Self::Passthru),
             (7u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::GpsRescue)
             }
             (7u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::CamStab),
-            (8u32, Betaflight2025) => Some(Self::Failsafe),
+            (8u32, Betaflight2025 | Betaflight2026) => Some(Self::Failsafe),
             (8u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::AntiGravity)
             }
             (8u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavRth),
-            (9u32, Betaflight2025) => Some(Self::PositionHold),
+            (9u32, Betaflight2025 | Betaflight2026) => Some(Self::PositionHold),
             (9u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::HeadAdjust)
             }
             (9u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavPositionHold),
-            (10u32, Betaflight2025) => Some(Self::GpsRescue),
+            (10u32, Betaflight2025 | Betaflight2026) => Some(Self::GpsRescue),
             (10u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::CamStab)
             }
             (10u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Manual),
             (11u32, Betaflight2025) => Some(Self::AntiGravity),
+            (11u32, Betaflight2026) => Some(Self::Autopilot),
             (
                 11u32,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::BeeperOn),
             (12u32, Betaflight2025) => Some(Self::HeadAdjust),
+            (12u32, Betaflight2026) => Some(Self::AntiGravity),
             (
                 12u32,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::LedLow),
             (13u32, Betaflight2025) => Some(Self::CamStab),
+            (13u32, Betaflight2026) => Some(Self::HeadAdjust),
             (13u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Calibration)
             }
             (13u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Lights),
             (14u32, Betaflight2025) => Some(Self::BeeperOn),
+            (14u32, Betaflight2026) => Some(Self::CamStab),
             (14u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Osd)
             }
             (14u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavLaunch),
             (15u32, Betaflight2025) => Some(Self::LedLow),
+            (15u32, Betaflight2026) => Some(Self::BeeperOn),
             (15u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Telemetry)
             }
             (15u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Osd),
             (16u32, Betaflight2025) => Some(Self::Calibration),
+            (16u32, Betaflight2026) => Some(Self::LedLow),
             (16u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Servo1)
             }
             (16u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Telemetry),
             (17u32, Betaflight2025) => Some(Self::Osd),
+            (17u32, Betaflight2026) => Some(Self::Calibration),
             (17u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Servo2)
             }
             (17u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Blackbox),
             (18u32, Betaflight2025) => Some(Self::Telemetry),
+            (18u32, Betaflight2026) => Some(Self::Osd),
             (18u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Servo3)
             }
             (18u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Failsafe),
             (19u32, Betaflight2025) => Some(Self::Servo1),
+            (19u32, Betaflight2026) => Some(Self::Telemetry),
             (19u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Blackbox)
             }
             (19u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavWaypoint),
             (20u32, Betaflight2025) => Some(Self::Servo2),
+            (20u32, Betaflight2026) => Some(Self::Servo1),
             (
                 20u32,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(Self::Airmode),
             (21u32, Betaflight2025) => Some(Self::Servo3),
+            (21u32, Betaflight2026) => Some(Self::Servo2),
             (21u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::ThreeD)
             }
             (21u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::HomeReset),
             (22u32, Betaflight2025) => Some(Self::Blackbox),
+            (22u32, Betaflight2026) => Some(Self::Servo3),
             (22u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::FpvAngleMix)
             }
             (22u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::GcsNav),
             (23u32, Betaflight2025) => Some(Self::Airmode),
+            (23u32, Betaflight2026) => Some(Self::Blackbox),
             (23u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::BlackboxErase)
             }
             (23u32, Inav5 | Inav6 | Inav7) => Some(Self::Killswitch),
             (24u32, Betaflight2025) => Some(Self::ThreeD),
+            (24u32, Betaflight2026) => Some(Self::Airmode),
             (24u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Camera1)
             }
             (24u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Surface),
             (25u32, Betaflight2025) => Some(Self::FpvAngleMix),
+            (25u32, Betaflight2026) => Some(Self::ThreeD),
             (25u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Camera2)
             }
             (25u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Flaperon),
             (26u32, Betaflight2025) => Some(Self::BlackboxErase),
+            (26u32, Betaflight2026) => Some(Self::FpvAngleMix),
             (26u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Camera3)
             }
             (26u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::TurnAssist),
             (27u32, Betaflight2025) => Some(Self::Camera1),
+            (27u32, Betaflight2026) => Some(Self::BlackboxErase),
             (27u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Turtle)
             }
             (27u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AutoTrim),
             (28u32, Betaflight2025) => Some(Self::Camera2),
+            (28u32, Betaflight2026) => Some(Self::Camera1),
             (28u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Prearm)
             }
             (28u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AutoTune),
             (29u32, Betaflight2025) => Some(Self::Camera3),
+            (29u32, Betaflight2026) => Some(Self::Camera2),
             (29u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::BeepGpsCount)
             }
             (29u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Camera1),
             (30u32, Betaflight2025) => Some(Self::Turtle),
+            (30u32, Betaflight2026) => Some(Self::Camera3),
             (30u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::VtxPitMode)
             }
             (30u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Camera2),
             (31u32, Betaflight2025) => Some(Self::Prearm),
+            (31u32, Betaflight2026) => Some(Self::Turtle),
             (31u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::Paralyze)
             }
             (31u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Camera3),
             (32u32, Betaflight2025) => Some(Self::BeepGpsCount),
+            (32u32, Betaflight2026) => Some(Self::Prearm),
             (32u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::User1)
             }
             (32u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::OsdAlt1),
             (33u32, Betaflight2025) => Some(Self::VtxPitMode),
+            (33u32, Betaflight2026) => Some(Self::BeepGpsCount),
             (33u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::User2)
             }
             (33u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::OsdAlt2),
             (34u32, Betaflight2025) => Some(Self::Paralyze),
+            (34u32, Betaflight2026) => Some(Self::VtxPitMode),
             (34u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::User3)
             }
             (34u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::OsdAlt3),
             (35u32, Betaflight2025) => Some(Self::User1),
+            (35u32, Betaflight2026) => Some(Self::Paralyze),
             (35u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::User4)
             }
             (35u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavCourseHold),
             (36u32, Betaflight2025) => Some(Self::User2),
+            (36u32, Betaflight2026) => Some(Self::User1),
             (36u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::PidAudio)
             }
             (36u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Braking),
             (37u32, Betaflight2025) => Some(Self::User3),
+            (37u32, Betaflight2026) => Some(Self::User2),
             (37u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::AcroTrainer)
             }
             (37u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::User1),
             (38u32, Betaflight2025) => Some(Self::User4),
+            (38u32, Betaflight2026) => Some(Self::User3),
             (38u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::VtxControlDisable)
             }
             (38u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::User2),
             (39u32, Betaflight2025) => Some(Self::PidAudio),
+            (39u32, Betaflight2026) => Some(Self::User4),
             (39u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::LaunchControl)
             }
             (39u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::FpvAngleMix),
             (40u32, Betaflight2025) => Some(Self::AcroTrainer),
+            (40u32, Betaflight2026) => Some(Self::PidAudio),
             (40u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::MspOverride)
             }
             (40u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::LoiterChange),
             (41u32, Betaflight2025) => Some(Self::VtxControlDisable),
+            (41u32, Betaflight2026) => Some(Self::AcroTrainer),
             (41u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::StickCommandDisable)
             }
             (41u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::MspRcOverride),
             (42u32, Betaflight2025) => Some(Self::LaunchControl),
+            (42u32, Betaflight2026) => Some(Self::VtxControlDisable),
             (42u32, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(Self::BeeperMute)
             }
             (42u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Prearm),
             (43u32, Betaflight2025) => Some(Self::MspOverride),
+            (43u32, Betaflight2026) => Some(Self::LaunchControl),
             (43u32, Betaflight4_5) => Some(Self::Ready),
             (43u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Turtle),
             (44u32, Betaflight2025) => Some(Self::StickCommandDisable),
+            (44u32, Betaflight2026) => Some(Self::MspOverride),
             (44u32, Betaflight4_5) => Some(Self::LapTimerReset),
             (44u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::NavCruise),
             (45u32, Betaflight2025) => Some(Self::BeeperMute),
+            (45u32, Betaflight2026) => Some(Self::StickCommandDisable),
             (45u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::AutoLevel),
             (46u32, Betaflight2025) => Some(Self::Ready),
+            (46u32, Betaflight2026) => Some(Self::BeeperMute),
             (46u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::PlanWpMission),
             (47u32, Betaflight2025) => Some(Self::LapTimerReset),
+            (47u32, Betaflight2026) => Some(Self::Ready),
             (47u32, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::Soaring),
+            (48u32, Betaflight2026) => Some(Self::LapTimerReset),
             (48u32, Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::User3),
+            (49u32, Betaflight2026) => Some(Self::WpCapture),
             (49u32, Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::User4),
             (50u32, Inav6 | Inav7 | Inav8 | Inav9) => Some(Self::MissionChange),
             (51u32, Inav7 | Inav8 | Inav9) => Some(Self::Beepermute),
@@ -596,238 +644,281 @@ impl FlightMode {
         match (self, fw) {
             (
                 Self::Arm,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(0u32),
             (
                 Self::Angle,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(1u32),
             (
                 Self::Horizon,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5
-                | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
             ) => Some(2u32),
             (
                 Self::Mag,
-                Betaflight2025 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
+                Betaflight2025 | Betaflight2026 | Betaflight4_2 | Betaflight4_3 | Betaflight4_4
+                | Betaflight4_5,
             ) => Some(3u32),
             (Self::NavAltitudeHold, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(3u32),
-            (Self::AltitudeHold, Betaflight2025) => Some(4u32),
+            (Self::AltitudeHold, Betaflight2025 | Betaflight2026) => Some(4u32),
             (Self::HeadFree, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(4u32)
             }
             (Self::HeadingHold, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(4u32),
-            (Self::HeadFree, Betaflight2025 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(5u32),
+            (
+                Self::HeadFree,
+                Betaflight2025 | Betaflight2026 | Inav5 | Inav6 | Inav7 | Inav8 | Inav9,
+            ) => Some(5u32),
             (Self::Passthru, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(5u32)
             }
-            (Self::Chirp, Betaflight2025) => Some(6u32),
+            (Self::Chirp, Betaflight2025 | Betaflight2026) => Some(6u32),
             (Self::Failsafe, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(6u32)
             }
             (Self::HeadAdjust, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(6u32),
-            (Self::Passthru, Betaflight2025) => Some(7u32),
+            (Self::Passthru, Betaflight2025 | Betaflight2026) => Some(7u32),
             (Self::GpsRescue, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(7u32)
             }
             (Self::CamStab, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(7u32),
-            (Self::Failsafe, Betaflight2025) => Some(8u32),
+            (Self::Failsafe, Betaflight2025 | Betaflight2026) => Some(8u32),
             (Self::AntiGravity, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(8u32)
             }
             (Self::NavRth, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(8u32),
-            (Self::PositionHold, Betaflight2025) => Some(9u32),
+            (Self::PositionHold, Betaflight2025 | Betaflight2026) => Some(9u32),
             (Self::HeadAdjust, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(9u32)
             }
             (Self::NavPositionHold, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(9u32),
-            (Self::GpsRescue, Betaflight2025) => Some(10u32),
+            (Self::GpsRescue, Betaflight2025 | Betaflight2026) => Some(10u32),
             (Self::CamStab, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(10u32)
             }
             (Self::Manual, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(10u32),
             (Self::AntiGravity, Betaflight2025) => Some(11u32),
+            (Self::Autopilot, Betaflight2026) => Some(11u32),
             (
                 Self::BeeperOn,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(11u32),
             (Self::HeadAdjust, Betaflight2025) => Some(12u32),
+            (Self::AntiGravity, Betaflight2026) => Some(12u32),
             (
                 Self::LedLow,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(12u32),
             (Self::CamStab, Betaflight2025) => Some(13u32),
+            (Self::HeadAdjust, Betaflight2026) => Some(13u32),
             (Self::Calibration, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(13u32)
             }
             (Self::Lights, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(13u32),
             (Self::BeeperOn, Betaflight2025) => Some(14u32),
+            (Self::CamStab, Betaflight2026) => Some(14u32),
             (Self::Osd, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(14u32)
             }
             (Self::NavLaunch, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(14u32),
             (Self::LedLow, Betaflight2025) => Some(15u32),
+            (Self::BeeperOn, Betaflight2026) => Some(15u32),
             (Self::Telemetry, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(15u32)
             }
             (Self::Osd, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(15u32),
             (Self::Calibration, Betaflight2025) => Some(16u32),
+            (Self::LedLow, Betaflight2026) => Some(16u32),
             (Self::Servo1, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(16u32)
             }
             (Self::Telemetry, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(16u32),
             (Self::Osd, Betaflight2025) => Some(17u32),
+            (Self::Calibration, Betaflight2026) => Some(17u32),
             (Self::Servo2, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(17u32)
             }
             (Self::Blackbox, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(17u32),
             (Self::Telemetry, Betaflight2025) => Some(18u32),
+            (Self::Osd, Betaflight2026) => Some(18u32),
             (Self::Servo3, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(18u32)
             }
             (Self::Failsafe, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(18u32),
             (Self::Servo1, Betaflight2025) => Some(19u32),
+            (Self::Telemetry, Betaflight2026) => Some(19u32),
             (Self::Blackbox, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(19u32)
             }
             (Self::NavWaypoint, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(19u32),
             (Self::Servo2, Betaflight2025) => Some(20u32),
+            (Self::Servo1, Betaflight2026) => Some(20u32),
             (
                 Self::Airmode,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5 | Inav5 | Inav6
                 | Inav7 | Inav8 | Inav9,
             ) => Some(20u32),
             (Self::Servo3, Betaflight2025) => Some(21u32),
+            (Self::Servo2, Betaflight2026) => Some(21u32),
             (Self::ThreeD, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(21u32)
             }
             (Self::HomeReset, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(21u32),
             (Self::Blackbox, Betaflight2025) => Some(22u32),
+            (Self::Servo3, Betaflight2026) => Some(22u32),
             (Self::FpvAngleMix, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(22u32)
             }
             (Self::GcsNav, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(22u32),
             (Self::Airmode, Betaflight2025) => Some(23u32),
+            (Self::Blackbox, Betaflight2026) => Some(23u32),
             (
                 Self::BlackboxErase,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
             ) => Some(23u32),
             (Self::Killswitch, Inav5 | Inav6 | Inav7) => Some(23u32),
             (Self::ThreeD, Betaflight2025) => Some(24u32),
+            (Self::Airmode, Betaflight2026) => Some(24u32),
             (Self::Camera1, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(24u32)
             }
             (Self::Surface, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(24u32),
             (Self::FpvAngleMix, Betaflight2025) => Some(25u32),
+            (Self::ThreeD, Betaflight2026) => Some(25u32),
             (Self::Camera2, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(25u32)
             }
             (Self::Flaperon, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(25u32),
             (Self::BlackboxErase, Betaflight2025) => Some(26u32),
+            (Self::FpvAngleMix, Betaflight2026) => Some(26u32),
             (Self::Camera3, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(26u32)
             }
             (Self::TurnAssist, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(26u32),
             (Self::Camera1, Betaflight2025) => Some(27u32),
+            (Self::BlackboxErase, Betaflight2026) => Some(27u32),
             (Self::Turtle, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(27u32)
             }
             (Self::AutoTrim, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(27u32),
             (Self::Camera2, Betaflight2025) => Some(28u32),
+            (Self::Camera1, Betaflight2026) => Some(28u32),
             (Self::Prearm, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(28u32)
             }
             (Self::AutoTune, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(28u32),
             (Self::Camera3, Betaflight2025) => Some(29u32),
+            (Self::Camera2, Betaflight2026) => Some(29u32),
             (Self::BeepGpsCount, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(29u32)
             }
             (Self::Camera1, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(29u32),
             (Self::Turtle, Betaflight2025) => Some(30u32),
+            (Self::Camera3, Betaflight2026) => Some(30u32),
             (Self::VtxPitMode, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(30u32)
             }
             (Self::Camera2, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(30u32),
             (Self::Prearm, Betaflight2025) => Some(31u32),
+            (Self::Turtle, Betaflight2026) => Some(31u32),
             (Self::Paralyze, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(31u32)
             }
             (Self::Camera3, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(31u32),
             (Self::BeepGpsCount, Betaflight2025) => Some(32u32),
+            (Self::Prearm, Betaflight2026) => Some(32u32),
             (Self::User1, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(32u32)
             }
             (Self::OsdAlt1, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(32u32),
             (Self::VtxPitMode, Betaflight2025) => Some(33u32),
+            (Self::BeepGpsCount, Betaflight2026) => Some(33u32),
             (Self::User2, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(33u32)
             }
             (Self::OsdAlt2, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(33u32),
             (Self::Paralyze, Betaflight2025) => Some(34u32),
+            (Self::VtxPitMode, Betaflight2026) => Some(34u32),
             (Self::User3, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(34u32)
             }
             (Self::OsdAlt3, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(34u32),
             (Self::User1, Betaflight2025) => Some(35u32),
+            (Self::Paralyze, Betaflight2026) => Some(35u32),
             (Self::User4, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(35u32)
             }
             (Self::NavCourseHold, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(35u32),
             (Self::User2, Betaflight2025) => Some(36u32),
+            (Self::User1, Betaflight2026) => Some(36u32),
             (Self::PidAudio, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(36u32)
             }
             (Self::Braking, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(36u32),
             (Self::User3, Betaflight2025) => Some(37u32),
+            (Self::User2, Betaflight2026) => Some(37u32),
             (Self::AcroTrainer, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(37u32)
             }
             (Self::User1, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(37u32),
             (Self::User4, Betaflight2025) => Some(38u32),
+            (Self::User3, Betaflight2026) => Some(38u32),
             (
                 Self::VtxControlDisable,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
             ) => Some(38u32),
             (Self::User2, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(38u32),
             (Self::PidAudio, Betaflight2025) => Some(39u32),
+            (Self::User4, Betaflight2026) => Some(39u32),
             (
                 Self::LaunchControl,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
             ) => Some(39u32),
             (Self::FpvAngleMix, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(39u32),
             (Self::AcroTrainer, Betaflight2025) => Some(40u32),
+            (Self::PidAudio, Betaflight2026) => Some(40u32),
             (Self::MspOverride, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(40u32)
             }
             (Self::LoiterChange, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(40u32),
             (Self::VtxControlDisable, Betaflight2025) => Some(41u32),
+            (Self::AcroTrainer, Betaflight2026) => Some(41u32),
             (
                 Self::StickCommandDisable,
                 Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5,
             ) => Some(41u32),
             (Self::MspRcOverride, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(41u32),
             (Self::LaunchControl, Betaflight2025) => Some(42u32),
+            (Self::VtxControlDisable, Betaflight2026) => Some(42u32),
             (Self::BeeperMute, Betaflight4_2 | Betaflight4_3 | Betaflight4_4 | Betaflight4_5) => {
                 Some(42u32)
             }
             (Self::Prearm, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(42u32),
             (Self::MspOverride, Betaflight2025) => Some(43u32),
+            (Self::LaunchControl, Betaflight2026) => Some(43u32),
             (Self::Ready, Betaflight4_5) => Some(43u32),
             (Self::Turtle, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(43u32),
             (Self::StickCommandDisable, Betaflight2025) => Some(44u32),
+            (Self::MspOverride, Betaflight2026) => Some(44u32),
             (Self::LapTimerReset, Betaflight4_5) => Some(44u32),
             (Self::NavCruise, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(44u32),
             (Self::BeeperMute, Betaflight2025) => Some(45u32),
+            (Self::StickCommandDisable, Betaflight2026) => Some(45u32),
             (Self::AutoLevel, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(45u32),
             (Self::Ready, Betaflight2025) => Some(46u32),
+            (Self::BeeperMute, Betaflight2026) => Some(46u32),
             (Self::PlanWpMission, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(46u32),
             (Self::LapTimerReset, Betaflight2025) => Some(47u32),
+            (Self::Ready, Betaflight2026) => Some(47u32),
             (Self::Soaring, Inav5 | Inav6 | Inav7 | Inav8 | Inav9) => Some(47u32),
+            (Self::LapTimerReset, Betaflight2026) => Some(48u32),
             (Self::User3, Inav6 | Inav7 | Inav8 | Inav9) => Some(48u32),
+            (Self::WpCapture, Betaflight2026) => Some(49u32),
             (Self::User4, Inav6 | Inav7 | Inav8 | Inav9) => Some(49u32),
             (Self::MissionChange, Inav6 | Inav7 | Inav8 | Inav9) => Some(50u32),
             (Self::Beepermute, Inav7 | Inav8 | Inav9) => Some(51u32),
